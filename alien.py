@@ -4,13 +4,13 @@ from pygame.sprite import Sprite
 
 
 class Alien(Sprite):
-    alien_images = [[pg.image.load('images/Alien ' + str(number) + '-' + str(i) + '.png') for i in range(1, 4)] for number in range(1, 4)]
-    alien_exploded = [pg.image.load('images/Alien explosion 1-' + str(i) + '.png') for i in range(1, 5)]
+    alien_images = [[pg.image.load('images/Alien Types/Alien ' + str(number) + '-' + str(i) + '.png') for i in range(1, 4)] for number in range(1, 4)]
+    alien_exploded = [pg.image.load('images/Alien Explosion/Alien explosion 1-' + str(i) + '.png') for i in range(1, 5)]
     timers = []
     for i in range(3):
         timers.append(Timer(alien_images[i], 400))
 
-    timer_explode = Timer(alien_exploded, 10, True)
+    timer_explode = Timer(alien_exploded, 100, True)
 
     def __init__(self, ai_settings, screen, number=0):
         super(Alien, self).__init__()
@@ -43,8 +43,8 @@ class Alien(Sprite):
         elif self.dead and self.timer_switched:
             if self.timer_explode.frame_index() == len(Alien.alien_exploded) - 1:
                 self.dead = False
-                self.really_dead = True
                 self.timer_switched = False
+                self.really_dead = True
                 self.timer.reset()
         self.x += self.ai_settings.alien_speed * self.ai_settings.fleet_direction
         self.rect.x = self.x

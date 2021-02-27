@@ -2,7 +2,7 @@ import random
 import sys
 import pygame as pg
 import pickle
-import time
+
 
 from alien import Alien
 from bullet import Bullet
@@ -32,7 +32,7 @@ def check_key_up(event, ships):
             ship.moving_left = False
 
 
-def check_events(ai_settings, screen, play_button, stats, sb, sound, ships, aliens, bullets):
+def check_events(ai_settings, screen, play_button, scores_button, stats, sb, sound, ships, aliens, bullets):
     for event in pg.event.get():
         if event.type == pg.QUIT:
             sys.exit()
@@ -43,22 +43,28 @@ def check_events(ai_settings, screen, play_button, stats, sb, sound, ships, alie
         elif event.type == pg.MOUSEBUTTONDOWN:
             mouse_x, mouse_y = pg.mouse.get_pos()
             check_play_button(ai_settings, screen, play_button, stats, sb, ships, aliens, bullets, mouse_x, mouse_y)
+            check_scores_button(ai_settings, screen, scores_button, stats, sb, ships, aliens, bullets, mouse_x, mouse_y)
 
 
-def update_screen(ai_settings, screen, play_button, stats, sb, sound, ships, aliens, bullets, alien_bullets):
-    screen.fill(ai_settings.bg_color)
-    for bullet in bullets.sprites():
-        bullet.draw_bullet()
-    for ship in ships:
-        ship.draw_ship()
-    for alien in aliens.sprites():
-        alien.draw_alien()
-    for alien_bullet in alien_bullets.sprites():
-        alien_bullet.draw_alien_bullet()
-    sb.show_score()
+def update_screen(ai_settings, screen, play_button, score_button, stats, sb, sound, ships, aliens, bullets,
+                  alien_bullets, UFO_object):
+    if stats.game_active:
+        screen.fill(ai_settings.bg_color)
+        for ship in ships:
+            ship.draw_ship()
+        for alien in aliens.sprites():
+            alien.draw_alien()
+        for bullet in bullets.sprites():
+            bullet.draw_bullet()
+        for alien_bullet in alien_bullets.sprites():
+            alien_bullet.draw_alien_bullet()
+        if UFO_object.appear:
+            UFO_object.draw_UFO()
+        sb.show_score()
 
     if not stats.game_active:
         play_button.draw_button()
+        score_button.draw_button()
         sound.pause_bg()
     else:
         if not sound.playing_bg:
@@ -70,16 +76,18 @@ def update_screen(ai_settings, screen, play_button, stats, sb, sound, ships, ali
 
 
 ################################################### ALIENS FUNCTIONS ###################################################
+
+
 def get_number_aliens_x(ai_settings, alien_width):
-    available_space_x = ai_settings.screen_width - 2 * alien_width
-    number_aliens_x = int(available_space_x / (2 * alien_width))
+    available_space_x = ai_settings.screen_width - 1 * alien_width
+    number_aliens_x = int(available_space_x / (1.2 * alien_width))
     return number_aliens_x
 
 
 def get_number_rows(ai_settings, ship_height, alien_height):
     available_space_y = (ai_settings.screen_height - (1 * ship_height) - ship_height)
     number_rows = int(available_space_y / (1.8 * alien_height))
-    return number_rows
+    return 6
 
 
 def create_alien(ai_settings, screen, aliens, alien_number, row_number):
@@ -90,9 +98,9 @@ def create_alien(ai_settings, screen, aliens, alien_number, row_number):
     else:
         alien = Alien(ai_settings, screen, 0)
     alien_width = alien.rect.width
-    alien.x = alien_width + 1.5 * alien_width * alien_number
+    alien.x = alien_width + 1 * alien_width * alien_number
     alien.rect.x = alien.x
-    alien.rect.y = alien.rect.height + 1 * alien.rect.height * row_number
+    alien.rect.y = alien.rect.height + 0.8 * alien.rect.height * row_number + 80
     aliens.add(alien)
 
 
@@ -120,51 +128,36 @@ def change_fleet_direction(ai_settings, aliens):
     ai_settings.fleet_direction *= -1
 
 
-def ship_hit(ai_settings, screen, stats, sb, sound, ships, aliens, bullets):
-    if stats.ship_left > 1:
-        stats.ship_left -= 1
-        sb.prep_ship()
-
-        aliens.empty()
-        bullets.empty()
-
-        create_fleet(ai_settings, screen, ships, aliens)
-        for ship in ships:
-            ship.center_ship()
-
-        sleep(0.5)
-    else:
-        stats.game_active = False
-        sound.pause_bg()
-        pg.mouse.set_visible(True)
-
-
-def check_aliens_bottom(ai_settings,  screen, stats, sb, sound, ships, aliens, bullets):
+def check_aliens_bottom(ai_settings, screen, stats, sb, sound, ships, aliens, bullets, alien_bullets):
     screen_rect = screen.get_rect()
     for alien in aliens.sprites():
         if alien.rect.bottom >= screen_rect.bottom:
-            ship_hit(ai_settings, screen, stats, sb, sound, ships, aliens, bullets)
+            ship_hit(ai_settings, screen, stats, sb, sound, ships, aliens, bullets, alien_bullets)
             break
 
 
-def update_aliens(ai_settings, screen, stats, sb, sound, ships, aliens, bullets, alien_bullets, timer):
+def update_aliens(ai_settings, screen, stats, sb, sound, ships, aliens, bullets, alien_bullets, timer, aliens_list):
     check_fleet_edges(ai_settings, aliens)
     aliens.update()
-    alien_fire_bullets(ai_settings, screen, aliens, alien_bullets, timer)
     for ship in ships:
         if pg.sprite.spritecollideany(ship, aliens):
-            ship_hit(ai_settings, screen, stats,  sb, sound, ships, aliens, bullets)
-    check_aliens_bottom(ai_settings, screen, stats, sb, sound, ships, aliens, bullets)
+            ship_hit(ai_settings, screen, stats, sb, sound, ships, aliens, bullets, alien_bullets)
+    check_aliens_bottom(ai_settings, screen, stats, sb, sound, ships, aliens, bullets, alien_bullets)
+    aliens_list.clear()
     for alien in aliens:
         alien.update()
+        aliens_list.append(alien)
         if alien.really_dead:
             aliens.remove(alien)
+    alien_fire_bullets(ai_settings, screen, alien_bullets, timer, aliens_list)
 
 
 ########################################################################################################################
 
 
 ################################################## BULLETS FUNCTIONS ###################################################
+
+
 def fire_bullets(ai_settings, screen, ships, bullets):
     if len(bullets) < ai_settings.bullets_allowed:
         for ship in ships:
@@ -203,38 +196,74 @@ def update_bullets(ai_settings, screen, stats, sb, sound, ships, aliens, bullets
 ########################################################################################################################
 
 
-################################################## ALIEN BULLETS FUNCTIONS ###################################################
-def alien_fire_bullets(ai_settings, screen, aliens, alien_bullets, timer):
+############################################### ALIEN BULLETS FUNCTIONS ################################################
+
+
+def alien_fire_bullets(ai_settings, screen, alien_bullets, timer, aliens_list):
     if (pg.time.get_ticks() - timer[0]) > 1000:
-        for alien in aliens:
-            new_bullet = Alien_Bullet(ai_settings, screen, alien)
-            alien_bullets.add(new_bullet)
+        alien = random.choice(aliens_list)
+        new_bullet = Alien_Bullet(ai_settings, screen, alien)
+        alien_bullets.add(new_bullet)
         timer.pop()
         timer.append(pg.time.get_ticks())
 
 
-def check_bullet_ship_collisions(ai_settings, screen, stats, sb, sound, ships, aliens, alien_bullets):
+def check_bullet_ship_collisions(ships, alien_bullets):
     collisions = pg.sprite.groupcollide(alien_bullets, ships, True, False)
     if collisions:
         for ships in collisions.values():
             for ship in ships:
                 ship.dead = True
-        sound.alien_hit()
 
 
-def update_alien_bullets(ai_settings, alien_bullets):
+def update_alien_bullets(ai_settings, ships, alien_bullets):
     alien_bullets.update()
     for alien_bullet in alien_bullets.copy():
         if alien_bullet.rect.bottom >= ai_settings.screen_height:
             alien_bullets.remove(alien_bullet)
+    check_bullet_ship_collisions(ships, alien_bullets)
 
 
-def update_ships(ships):
+########################################################################################################################
+
+
+#################################################### SHIP FUNCTIONS ####################################################
+
+
+def update_ships(ai_settings, screen, stats, sb, sound, ships, aliens, bullets, alien_bullets):
     ships.update()
+    for ship in ships:
+        if ship.really_dead:
+            ship.really_dead = False
+            ship_hit(ai_settings, screen, stats, sb, sound, ships, aliens, bullets, alien_bullets)
+
+
+def ship_hit(ai_settings, screen, stats, sb, sound, ships, aliens, bullets, alien_bullets):
+    if stats.ship_left > 1:
+        stats.ship_left -= 1
+        sb.prep_ship()
+        aliens.empty()
+        bullets.empty()
+        alien_bullets.empty()
+
+        create_fleet(ai_settings, screen, ships, aliens)
+        for ship in ships:
+            ship.center_ship()
+
+        sleep(0.5)
+    else:
+        screen.fill(ai_settings.bg_color)
+        stats.game_active = False
+        sound.pause_bg()
+        pg.mouse.set_visible(True)
+
+
 ########################################################################################################################
 
 
 ############################################### OPENING SCREEN FUNCTIONS ###############################################
+
+
 def check_play_button(ai_settings, screen, play_button, stats, sb, ships, aliens, bullets, mouse_x, mouse_y):
     button_clicked = play_button.rect.collidepoint(mouse_x, mouse_y)
     if button_clicked and not stats.game_active:
@@ -257,10 +286,40 @@ def check_play_button(ai_settings, screen, play_button, stats, sb, ships, aliens
             ship.center_ship()
 
 
+def check_scores_button(ai_settings, screen, scores_button, stats, sb, ships, aliens, bullets, mouse_x, mouse_y):
+    button_clicked = scores_button.rect.collidepoint(mouse_x, mouse_y)
+    if button_clicked and not stats.game_active:
+        print('getting scores')
+        print(stats.score)
+        print(stats.high_score)
+        high_score_font = pg.font.SysFont("monospace", 32)
+        high_score_text = high_score_font.render("Current High Score: " + str(stats.high_score), 1, (255, 255, 255))
+        screen.blit(high_score_text, (360, 670))
+
+
 def check_high_score(stats, sb):
     if stats.score > stats.high_score:
         stats.high_score = stats.score
         sb.prep_high_score()
         with open('score.dat', 'wb') as file:
             pickle.dump(stats.high_score, file)
+
+
 ########################################################################################################################
+
+
+def UFO_appear(screen, UFO_object):
+    if random.randint(0, 120) == 1:
+        UFO_object.appear = True
+        if random.randint(1, 2) == 1:
+            UFO_object.initialize(UFO_object.rect.width, 1)
+        else:
+            UFO_object.initialize(screen.get_rect().right - UFO_object.rect.width, -1)
+
+
+def update_UFO(screen, UFO_object):
+    if not UFO_object.appear:
+        UFO_appear(screen, UFO_object)
+    UFO_object.update()
+
+    UFO_object.UF0_check_edges()

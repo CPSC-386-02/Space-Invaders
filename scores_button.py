@@ -1,7 +1,8 @@
 import pygame.font
+import game_functions as gf
 
 
-class Button():
+class ScoreButton:
     def __init__(self, ai_settings, screen, msg):
         self.screen = screen
         self.screen_rect = screen.get_rect()
@@ -13,7 +14,7 @@ class Button():
 
         self.rect = pygame.Rect(0, 0, self.width, self.height)
         self.rect.center = self.screen_rect.center
-        self.rect.center = (self.rect.centerx, self.rect.centery + 140)
+        self.rect.center = (self.rect.centerx, self.rect.centery + 200)
 
         self.prep_msg(msg)
 

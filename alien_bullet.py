@@ -10,7 +10,7 @@ class Alien_Bullet(Sprite):
 
         self.rect = pg.Rect(0, 0, ai_settings.bullet_width, ai_settings.bullet_length)
         self.rect.centerx = alien.rect.centerx
-        self.rect.top = alien.rect.top
+        self.rect.top = alien.rect.bottom
 
         self.y = float(self.rect.y)
 
