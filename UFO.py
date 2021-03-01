@@ -9,17 +9,18 @@ class UFO(Sprite):
     timer_ship = Timer(ship, 400)
     timer_explode = Timer(ship_exploded, 30, True)
 
-    def __init__(self, ai_settings, screen, appear=None):
+    def __init__(self, ai_settings, screen):
         super(UFO, self).__init__()
         self.ai_settings = ai_settings
         self.screen = screen
-        self.appear = appear
+        self.appear = None
+        self.hit = None
 
         self.image = pg.image.load('images/UFO/UFO.png')
         self.rect = self.image.get_rect()
 
         self.rect.x = self.rect.width
-        self.rect.y = self.rect.height
+        self.rect.y = self.rect.height + 25
 
         self.direction = 1
 
@@ -44,7 +45,7 @@ class UFO(Sprite):
 
     def update(self):
         if self.appear:
-            self.x += 5 * self.direction
+            self.x += 1 * self.direction
             self.rect.x = self.x
 
     def draw_UFO(self):

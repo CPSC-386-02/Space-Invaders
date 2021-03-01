@@ -10,12 +10,14 @@ class Settings:
         self.bullet_width = 3
         self.bullet_length = 15
         self.bullet_color = (60, 60, 60)
-        self.bullets_allowed = 5
+        self.bullets_allowed = 10
 
         self.fleet_drop_speed = 10
 
         self.speedup_scale = 1.1
         self.score_scale = 1.5
+
+        self.UFO_score = [50, 100, 200]
 
         self.initialize_dynamic_settings()
 

@@ -48,11 +48,11 @@ class TimerDual:
         self.timer2 = Timer(frames2, wait2, frameindex2, step2, looponce)
         self.timer = self.timer1   # start with timer1
 
-        self.now = pygame.time.get_ticks()
+        self.now = pg.time.get_ticks()
         self.lastswitch = self.now
 
     def frame_index(self):
-        now = pygame.time.get_ticks()
+        now = pg.time.get_ticks()
         if now - self.lastswitch > self.wait_switch_timers:
             self.timer = self.timer2 if self.timer == self.timer1 else self.timer1
             self.lastswitch = now

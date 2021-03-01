@@ -1,5 +1,4 @@
 import pygame.font
-import game_functions as gf
 
 
 class ScoreButton:
