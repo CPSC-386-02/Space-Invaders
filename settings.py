@@ -19,6 +19,9 @@ class Settings:
 
         self.UFO_score = [50, 100, 200]
 
+        self.barrier_height = 650
+        self.barrier_color = (78, 255, 87)
+
         self.initialize_dynamic_settings()
 
     def initialize_dynamic_settings(self):

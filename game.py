@@ -51,7 +51,7 @@ class Game:
         screen = pg.display.set_mode((ai_settings.screen_width, ai_settings.screen_height))
         pg.display.set_caption(ai_settings.title)
 
-        play_button = Button(ai_settings, screen, "Play")
+        play_button = Button(screen, "Play")
         score_button = ScoreButton(ai_settings, screen, "High Score")
 
         stats = GameStats(ai_settings=ai_settings)
@@ -64,6 +64,7 @@ class Game:
         ship = Ship(ai_settings=ai_settings, screen=screen)
         ships = Group()
         ships.add(ship)
+        barriers = Group()
 
         aliens = Group()
 
@@ -78,7 +79,9 @@ class Game:
         UFOs.add(UFO_object)
         timer_score_display = [pg.time.get_ticks()]
 
-        gf.create_fleet(ai_settings=ai_settings, screen=screen, ships=ships, aliens=aliens)
+        for ship in ships:
+            gf.create_fleet(ai_settings=ai_settings, screen=screen, ship=ship, aliens=aliens)
+        gf.create_barriers(ai_settings=ai_settings, screen=screen, barriers=barriers)
         screen.fill(ai_settings.bg_color)
         while True:
             gf.check_events(ai_settings=ai_settings, screen=screen, play_button=play_button, scores_button=score_button,
@@ -91,8 +94,9 @@ class Game:
                                  ships=ships, aliens=aliens, bullets=bullets, alien_bullets=alien_bullets, timer=timer,
                                  aliens_list=aliens_list, UFOs=UFOs)
                 gf.update_bullets(ai_settings=ai_settings, screen=screen, stats=stats, sb=sb, sound=sound,
-                                  ships=ships, aliens=aliens, bullets=bullets)
-                gf.update_alien_bullets(ai_settings=ai_settings, ships=ships, alien_bullets=alien_bullets)
+                                  ships=ships, aliens=aliens, bullets=bullets, barriers=barriers)
+                gf.update_alien_bullets(ai_settings=ai_settings, ships=ships, alien_bullets=alien_bullets,
+                                        barriers=barriers)
                 gf.update_UFO(ai_settings=ai_settings, screen=screen, stats=stats, sb=sb, sound=sound, bullets=bullets,
                               UFOs=UFOs, timer_value_display=timer_score_display)
             else:
@@ -109,7 +113,7 @@ class Game:
             gf.update_screen(ai_settings=ai_settings, screen=screen,
                              play_button=play_button, score_button=score_button, stats=stats, sb=sb, sound=sound,
                              ships=ships, aliens=aliens, bullets=bullets, alien_bullets=alien_bullets, UFOs=UFOs,
-                             timer_score_display=timer_score_display)
+                             timer_score_display=timer_score_display, barriers=barriers)
 
 
 def main():

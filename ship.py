@@ -17,6 +17,7 @@ class Ship(Sprite):
         self.really_dead = False
         self.timer = Ship.timer_ship
 
+        self.image = pg.image.load("images/Ship/Ship.png")
         self.rect = self.timer.imagerect().get_rect()
         self.screen_rect = screen.get_rect()
 
@@ -44,12 +45,11 @@ class Ship(Sprite):
 
         self.rect.centerx = self.center
 
-    def draw_ship(self):
+    def draw(self):
         ship_image = self.timer.imagerect()
         rect = ship_image.get_rect()
         rect.x, rect.y = self.rect.x, self.rect.y
         self.screen.blit(ship_image, rect)
-
 
     def center_ship(self):
         self.center = self.screen_rect.centerx

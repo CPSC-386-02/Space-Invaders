@@ -7,6 +7,7 @@ from alien import Alien
 from bullet import Bullet
 from time import sleep
 from alien_bullet import Alien_Bullet
+from blocker import Blocker
 
 
 ################################################ CHECK EVENT FUNCTIONS #################################################
@@ -46,11 +47,11 @@ def check_events(ai_settings, screen, play_button, scores_button, stats, sb, sou
 
 
 def update_screen(ai_settings, screen, play_button, score_button, stats, sb, sound, ships, aliens, bullets,
-                  alien_bullets, UFOs, timer_score_display):
+                  alien_bullets, UFOs, timer_score_display, barriers):
     if stats.game_active:
         screen.fill(ai_settings.bg_color)
         for ship in ships:
-            ship.draw_ship()
+            ship.draw()
         for alien in aliens.sprites():
             alien.draw_alien()
         for bullet in bullets.sprites():
@@ -65,6 +66,8 @@ def update_screen(ai_settings, screen, play_button, score_button, stats, sb, sou
                     sb.show_UFO_score()
                 else:
                     UFO_object.hit = False
+        for barrier in barriers:
+            barrier.draw_barrier()
         sb.show_score()
 
     if not stats.game_active:
@@ -81,8 +84,6 @@ def update_screen(ai_settings, screen, play_button, score_button, stats, sb, sou
 
 
 ################################################### ALIENS FUNCTIONS ###################################################
-
-
 def get_number_aliens_x(ai_settings, alien_width):
     available_space_x = ai_settings.screen_width - 1 * alien_width
     number_aliens_x = int(available_space_x / (1 * alien_width))
@@ -109,11 +110,10 @@ def create_alien(ai_settings, screen, aliens, alien_number, row_number):
     aliens.add(alien)
 
 
-def create_fleet(ai_settings, screen, ships, aliens):
+def create_fleet(ai_settings, screen, ship, aliens):
     alien = Alien(ai_settings, screen)
     number_aliens_x = get_number_aliens_x(ai_settings, alien.rect.width)
-    for ship in ships:
-        number_rows = get_number_rows(ai_settings, ship.rect.height, alien.rect.height)
+    number_rows = get_number_rows(ai_settings, ship.rect.height, alien.rect.height)
 
     for row_number in range(number_rows):
         for alien_number in range(number_aliens_x):
@@ -141,7 +141,8 @@ def check_aliens_bottom(ai_settings, screen, stats, sb, sound, ships, aliens, bu
             break
 
 
-def update_aliens(ai_settings, screen, stats, sb, sound, ships, aliens, bullets, alien_bullets, timer, aliens_list, UFOs):
+def update_aliens(ai_settings, screen, stats, sb, sound, ships, aliens, bullets, alien_bullets, timer, aliens_list,
+                  UFOs):
     check_fleet_edges(ai_settings, aliens)
     aliens.update()
     for ship in ships:
@@ -161,8 +162,6 @@ def update_aliens(ai_settings, screen, stats, sb, sound, ships, aliens, bullets,
 
 
 ################################################## BULLETS FUNCTIONS ###################################################
-
-
 def fire_bullets(ai_settings, screen, ships, bullets):
     if len(bullets) < ai_settings.bullets_allowed:
         for ship in ships:
@@ -171,11 +170,10 @@ def fire_bullets(ai_settings, screen, ships, bullets):
 
 
 def check_bullet_alien_collisions(ai_settings, screen, stats, sb, sound, ships, aliens, bullets):
-    collisions = pg.sprite.groupcollide(bullets, aliens, True, False)
+    collisions = pg.sprite.groupcollide(aliens, bullets, False, True)
     if collisions:
-        for aliens in collisions.values():
-            for alien in aliens:
-                alien.dead = True
+        for alien in collisions:
+            alien.dead = True
             stats.score += ai_settings.alien_points
             sb.prep_score()
         check_high_score(stats, sb)
@@ -186,24 +184,27 @@ def check_bullet_alien_collisions(ai_settings, screen, stats, sb, sound, ships, 
 
         stats.level += 1
         sb.prep_level()
+        for ship in ships:
+            create_fleet(ai_settings, screen, ship, aliens)
 
-        create_fleet(ai_settings, screen, ships, aliens)
+
+def check_ship_bullet_barrier_collisions(barriers, bullets):
+    pg.sprite.groupcollide(barriers, bullets, True, True)
 
 
-def update_bullets(ai_settings, screen, stats, sb, sound, ships, aliens, bullets):
+def update_bullets(ai_settings, screen, stats, sb, sound, ships, aliens, bullets, barriers):
     bullets.update()
     for bullet in bullets.copy():
         if bullet.rect.bottom <= 0:
             bullets.remove(bullet)
     check_bullet_alien_collisions(ai_settings, screen, stats, sb, sound, ships, aliens, bullets)
+    check_ship_bullet_barrier_collisions(barriers, bullets)
 
 
 ########################################################################################################################
 
 
 ############################################### ALIEN BULLETS FUNCTIONS ################################################
-
-
 def alien_fire_bullets(ai_settings, screen, alien_bullets, timer, aliens_list):
     if (pg.time.get_ticks() - timer[0]) > 1000:
         alien = random.choice(aliens_list)
@@ -214,25 +215,50 @@ def alien_fire_bullets(ai_settings, screen, alien_bullets, timer, aliens_list):
 
 
 def check_bullet_ship_collisions(ships, alien_bullets):
-    collisions = pg.sprite.groupcollide(alien_bullets, ships, True, False)
+    collisions = pg.sprite.groupcollide(ships, alien_bullets, False, True)
     if collisions:
-        for ships in collisions.values():
-            for ship in ships:
-                ship.dead = True
+        for ship in collisions:
+            ship.dead = True
 
 
-def update_alien_bullets(ai_settings, ships, alien_bullets):
+def check_alien_bullet_barrier_collisions(barriers, alien_bullets):
+    pg.sprite.groupcollide(barriers, alien_bullets, True, True)
+
+
+def update_alien_bullets(ai_settings, ships, alien_bullets, barriers):
     alien_bullets.update()
     for alien_bullet in alien_bullets.copy():
         if alien_bullet.rect.bottom >= ai_settings.screen_height:
             alien_bullets.remove(alien_bullet)
     check_bullet_ship_collisions(ships, alien_bullets)
+    check_alien_bullet_barrier_collisions(barriers, alien_bullets)
 
 
 ########################################################################################################################
 
 
 #################################################### SHIP FUNCTIONS ####################################################
+def ship_hit(ai_settings, screen, stats, sb, sound, ships, aliens, bullets, alien_bullets, UFOs):
+    if stats.ship_left > 1:
+        stats.ship_left -= 1
+        sb.prep_ship()
+        aliens.empty()
+        bullets.empty()
+        alien_bullets.empty()
+
+        for ship in ships:
+            create_fleet(ai_settings, screen, ship, aliens)
+            ship.center_ship()
+
+        sleep(0.5)
+    else:
+        screen.fill(ai_settings.bg_color)
+        stats.game_active = False
+        sound.pause_bg()
+        pg.mouse.set_visible(True)
+    for UFO_object in UFOs:
+        UFO_object.reset()
+        UFO_object.hit = False
 
 
 def update_ships(ai_settings, screen, stats, sb, sound, ships, aliens, bullets, alien_bullets, UFOs):
@@ -243,35 +269,10 @@ def update_ships(ai_settings, screen, stats, sb, sound, ships, aliens, bullets, 
             ship_hit(ai_settings, screen, stats, sb, sound, ships, aliens, bullets, alien_bullets, UFOs)
 
 
-def ship_hit(ai_settings, screen, stats, sb, sound, ships, aliens, bullets, alien_bullets, UFOs):
-    if stats.ship_left > 1:
-        stats.ship_left -= 1
-        sb.prep_ship()
-        aliens.empty()
-        bullets.empty()
-        alien_bullets.empty()
-        for UFO_object in UFOs:
-            UFO_object.reset()
-            UFO_object.hit = False
-
-        create_fleet(ai_settings, screen, ships, aliens)
-        for ship in ships:
-            ship.center_ship()
-
-        sleep(0.5)
-    else:
-        screen.fill(ai_settings.bg_color)
-        stats.game_active = False
-        sound.pause_bg()
-        pg.mouse.set_visible(True)
-
-
 ########################################################################################################################
 
 
 ############################################### OPENING SCREEN FUNCTIONS ###############################################
-
-
 def check_play_button(ai_settings, screen, play_button, stats, sb, ships, aliens, bullets, mouse_x, mouse_y):
     button_clicked = play_button.rect.collidepoint(mouse_x, mouse_y)
     if button_clicked and not stats.game_active:
@@ -289,8 +290,8 @@ def check_play_button(ai_settings, screen, play_button, stats, sb, ships, aliens
         aliens.empty()
         bullets.empty()
 
-        create_fleet(ai_settings, screen, ships, aliens)
         for ship in ships:
+            create_fleet(ai_settings, screen, ship, aliens)
             ship.center_ship()
 
 
@@ -313,6 +314,7 @@ def check_high_score(stats, sb):
 ########################################################################################################################
 
 
+#################################################### UFO FUNCTIONS #####################################################
 def UFO_appear(screen, UFO_object):
     if random.randint(0, 600) == 1:
         UFO_object.appear = True
@@ -328,20 +330,36 @@ def update_UFO(ai_settings, screen, stats, sb, sound, bullets, UFOs, timer_value
             UFO_appear(screen, UFO_object)
         UFO_object.update()
         UFO_object.UF0_check_edges()
-    check_collisions_bullets_alien(ai_settings, stats, sb, sound, bullets, UFOs, timer_value_display)
+    check_bullets_UFO_collisions(ai_settings, stats, sb, sound, bullets, UFOs, timer_value_display)
 
 
-def check_collisions_bullets_alien(ai_settings, stats, sb, sound, bullets, UFOs, timer_score_display):
-    collisions = pg.sprite.groupcollide(bullets, UFOs, True, False)
+def check_bullets_UFO_collisions(ai_settings, stats, sb, sound, bullets, UFOs, timer_score_display):
+    collisions = pg.sprite.groupcollide(UFOs, bullets, False, True)
     if collisions:
-        for UFOs in collisions.values():
+        for UFO_object in collisions:
             score = ai_settings.UFO_score[random.randint(0, 2)]
-            for UFO_object in UFOs:
-                timer_score_display.pop()
-                timer_score_display.append(pg.time.get_ticks())
-                sb.prep_UFO_score(UFO_object, score)
-                UFO_object.reset()
+            timer_score_display.pop()
+            timer_score_display.append(pg.time.get_ticks())
+            sb.prep_UFO_score(UFO_object, score)
+            UFO_object.reset()
             stats.score += score
             sb.prep_score()
         check_high_score(stats, sb)
         sound.alien_hit()
+
+
+########################################################################################################################
+
+
+################################################# BARRIERS FUNCTIONS ###################################################
+def create_barriers(ai_settings, screen, barriers):
+    for number in range(4):
+        for row in range(5):
+            for column in range(12):
+                blocker = Blocker(screen, 10, ai_settings.barrier_color, row, column)
+                blocker.rect.x = 250 + (200 * number) + (column * blocker.width)
+                blocker.rect.y = ai_settings.barrier_height + (row * blocker.height)
+                barriers.add(blocker)
+
+
+########################################################################################################################

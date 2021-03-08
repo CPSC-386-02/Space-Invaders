@@ -4,8 +4,8 @@ import pygame as pg
 class Sound:
     def __init__(self):
         pg.mixer.init()
-        pg.mixer.music.load('sound/21 Guns.mp3')
-        pg.mixer.music.set_volume(0.5)
+        pg.mixer.music.load('sound/bg music.wav')
+        pg.mixer.music.set_volume(0.3)
 
         self.bullet_sound = pg.mixer.Sound('sound/Pew.mp3')
         pg.mixer.Sound.set_volume(self.bullet_sound, 0.22)

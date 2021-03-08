@@ -3,7 +3,7 @@ from pygame.sprite import Group
 from ship import Ship
 
 
-class Scoreboard():
+class Scoreboard:
     def __init__(self, ai_settings, screen, stats):
         self.screen = screen
         self.screen_rect = screen.get_rect()
@@ -11,7 +11,7 @@ class Scoreboard():
         self.stats = stats
 
         self.text_color = (255, 255, 255)
-        self.font = pygame.font.SysFont(None, 48)
+        self.font = pygame.font.SysFont("None", 48)
 
         self.prep_score()
         self.prep_high_score()
@@ -55,7 +55,6 @@ class Scoreboard():
             self.ships.add(ship)
 
     def prep_UFO_score(self, UFO_object, score):
-        print("prep")
         UFO_object.hit = True
         UFO_score_str = str(score)
         self.UFO_score_image = self.font.render(UFO_score_str, True, self.text_color, self.ai_settings.bg_color)
@@ -63,13 +62,11 @@ class Scoreboard():
         self.UFO_score_rect.x = UFO_object.rect.x
         self.UFO_score_rect.y = UFO_object.rect.y
 
-
     def show_score(self):
         self.screen.blit(self.score_image, self.score_rect)
         self.screen.blit(self.high_score_image, self.high_score_rect)
         self.screen.blit(self.level_image, self.level_rect)
-        for ship in self.ships:
-            ship.draw_ship()
+        self.ships.draw(self.screen)
 
     def show_UFO_score(self):
         self.screen.blit(self.UFO_score_image, self.UFO_score_rect)
